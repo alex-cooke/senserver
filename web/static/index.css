@@ -1,0 +1,60 @@
+﻿body {
+    margin: 2px;
+    background: #000;
+}
+
+.heading {
+  /*  border: solid 1px #000; */
+    border-radius: 0px;
+    text-align: center;
+    padding: 2px;
+    font-size: 32px;
+    background: #abcdef;
+}
+.dashboard .meter {
+    padding: 2px;
+    margin: 0;
+}
+
+.dashboard .meter > div {
+ /*   border: solid 1px #000; */
+    border-radius: 0px;
+    background: silver;
+    text-align: center;
+    max-height: 64px;
+    height:64px;
+}
+
+.dashboard .meter > div img {
+    height: 48px;
+    float: left;
+    margin: 8px;
+    margin-left: 12px;
+}
+
+.dashboard .meter > div img.value {
+    height: 96px;
+    margin-top: 20px;
+    float: none;
+    padding: 0;
+
+}
+
+
+
+.dashboard .meter span.value {
+    font-size: 24pt;
+    text-align: center;
+    position: relative;
+    height: 48px;
+    vertical-align: middle;
+}
+
+.dashboard .meter .unit {
+    font-size: 14pt;
+    float: right;
+    font-weight: bold;
+    padding: 8px;
+    height: 48px;
+    vertical-align: middle;
+}

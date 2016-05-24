@@ -1,0 +1,43 @@
+﻿<div class="dashboard">
+    <div class="row">
+        <div class="meter col-sm-4">
+            <div>
+                <img src="/static/icons/temperature.png" />
+                <span class="value">{{ $ctrl.current.temperature | number:1 }}</span>
+                <span class="unit">&deg;C</span>
+            </div>
+        </div>
+        <div class="meter col-sm-4">
+            <div>
+                <img  src="/static/icons/humidity.png" />
+                <span class="value">{{ $ctrl.current.humidity | number:1 }}</span>
+                <span class="unit">%</span>
+            </div>
+        </div>
+        <div class="meter col-sm-4">
+            <div>
+                <img src="/static/icons/pressure.png" />
+                <span class="value">{{ $ctrl.current.pressure | number:0 }}</span>
+                <span class="unit">mb</span>
+            </div>
+        </div>
+        <div class="meter col-xs-4">
+            <div style="height: 128px;max-height: 128px">
+                <img class="value" src="/static/icons/rotateroll.png"
+                    style="-webkit-transform: rotate({{ $ctrl.current.orientation.roll | number:0 }}deg);" />
+            </div>
+        </div>
+        <div class="meter col-xs-4">
+            <div style="height: 128px;max-height: 128px">
+                <img class="value" src="/static/icons/rotatepitch.png"
+                     style="-webkit-transform: rotate({{ $ctrl.transformPitch($ctrl.current.orientation) | number:0 }}deg);" />
+            </div>
+        </div>
+        <div class="meter col-xs-4">
+            <div style="height: 128px;max-height: 128px">
+                <img class="value" src="/static/icons/rotateyaw.png"
+                     style="-webkit-transform: rotate({{ $ctrl.current.orientation.yaw | number:0 }}deg);" />
+            </div>
+        </div>
+    </div>
+</div>
