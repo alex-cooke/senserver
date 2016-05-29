@@ -79,6 +79,8 @@ def getValue(mode):
                 if (direction == STICK_MIDDLE):
                     cycleMode(mode);
 
+
+
 # Main Program
 
 if __name__ == '__main__':
