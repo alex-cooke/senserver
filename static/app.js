@@ -32,7 +32,7 @@
 
                 }
 
-                $interval($ctrl.refresh, 250);
+                $interval($ctrl.refresh, 500);
             }]
         };
     });
