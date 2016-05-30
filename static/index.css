@@ -1,15 +1,17 @@
 ﻿body {
     margin: 2px;
     background: #000;
+    color: black !important;
 }
 
 .heading {
   /*  border: solid 1px #000; */
     border-radius: 0px;
-    text-align: center;
+    text-align: left;
     padding: 2px;
-    font-size: 32px;
-    background: #abcdef;
+    padding-left: 8px;
+    font-size: 24px;
+    background: #ccc;
 }
 .dashboard .meter {
     padding: 2px;
@@ -19,7 +21,7 @@
 .dashboard .meter > div {
  /*   border: solid 1px #000; */
     border-radius: 0px;
-    background: #efefef;
+    background: #ccc;
     text-align: center;
     max-height: 64px;
     height:64px;
@@ -60,11 +62,45 @@
 #lineChart {
     width: 100% !important;
     height: 25vh !important;
-    background: #efefef !important;
+    background: #ccc !important;
 }
 
 .line {
   fill: none;
-  stroke: steelblue;
   stroke-width: 2px;
+}
+
+.temperature {
+    stroke: #cc6666;
+    background: #cc6666 !important;
+}
+.humidity {
+    stroke: #6666cc;
+    background: #6666cc !important;
+}
+.pressure {
+     stroke: #66cc66;
+    background: #66cc66 !important;
+}
+
+th,
+td {
+    border-color: #000 !important;
+}
+.section {
+    position: relative;
+    top: -2px;
+    padding-right: 4px;
+    opacity: 0.5;
+}
+.section img {
+    width: 24px;
+    height: 24px;
+}
+.section:hover {
+
+    opacity: 1;
+}
+.section.active {
+    opacity: 1;
 }

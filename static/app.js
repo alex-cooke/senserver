@@ -4,15 +4,25 @@
 
     //  Dashboard Directive
 
+    app.controller('index',
+        function($scope) {
+
+            $scope.activeSection = 'dashboard';
+            $scope.sections = ['history', 'notifications', 'dashboard'];
+
+            $scope.setActive = function (section) {
+                $scope.activeSection = section;
+            }
+        });
+
     app.directive('dashboard', function() {
 
         return {
             restrict: 'E',
             templateUrl: '/static/dashboard.html',
             controllerAs: '$ctrl',
-            controller: ['$http', '$interval', function($http, $interval) {
+            controller: ['$http', '$interval', '$scope', function ($http, $interval, $scope) {
                 var $ctrl = this;
-
 
                 $ctrl.refreshInterval = 1000;
 
@@ -54,11 +64,16 @@
                             renderChart($ctrl.rangeData, $('#lineChart'));
 
                             //  Start getting current data
-                            $interval($ctrl.refresh, $ctrl.refreshInterval);
+                            $ctrl.interval = $interval($ctrl.refresh, $ctrl.refreshInterval);
 
                         });
 
                 }
+
+                $scope.$on('$destroy', function() {
+                    $interval.cancel($ctrl.interval);
+                });
+
                 //  gets the current reading from senserver, updates the dashboard
                 $ctrl.refresh = function () {
 
@@ -107,10 +122,7 @@
                         .y(function(d) { return scale.temperature(d.temperature); }),
                     pressure: d3.line()
                         .x(function(d) { return scale.time(d.time); })
-                        .y(function(d) { return scale.pressure(d.pressure); }),
-                    pitch: d3.line()
-                        .x(function(d) { return scale.time(d.time); })
-                        .y(function (d) { return scale.pitch(d.pitch); })
+                        .y(function(d) { return scale.pressure(d.pressure); })
                 };
 
 
@@ -173,5 +185,73 @@
 
 
     });
+
+    app.directive('notifications',
+        function() {
+
+            return {
+                restrict: 'E',
+                templateUrl: '/static/notifications.html',
+                controllerAs: '$ctrl',
+                controller: [
+                    '$http', '$interval', function($http, $interval) {
+                        var $ctrl = this;
+
+                        $http.get('/notification/settings')
+                            .then(function (data) {
+                                $ctrl.settings = data.data;
+                            });
+
+
+                    }
+                ]
+            };
+        });
+
+
+    app.directive('history',
+    function () {
+
+        return {
+            restrict: 'E',
+            templateUrl: '/static/history.html',
+            controllerAs: '$ctrl',
+            controller: [
+                '$http', '$interval', function ($http, $interval) {
+                    var $ctrl = this;
+
+                    $ctrl.startTime = moment().add('minute', -1);
+                    $ctrl.endTime = moment();
+
+                    $http.get('/sense/range',
+                        {
+                            params: {
+                                startTime: $ctrl.startTime.format('YYYY-MM-DD HH:mm:ss'),
+                                endTime: $ctrl.endTime.format('YYYY-MM-DD HH:mm:ss')
+                            }
+                        })
+                        .then(function (data) {
+
+                            //  Transform and save the data
+                            $ctrl.readings = _(data.data)
+                                .map(function (d) {
+                                    return {
+                                        time: moment(d[0]).toDate(),
+                                        temperature: d[1],
+                                        pressure: d[2],
+                                        humidity: d[3],
+                                        pitch: d[5]
+                                    }
+                                }).value();
+
+                        });
+
+
+                }
+            ]
+        };
+    });
+
+
 
 })();

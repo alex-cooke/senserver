@@ -1,0 +1,20 @@
+﻿
+
+<div style="background: #ccc; margin: 1px">
+    <table class="table table-bordered" style="background: #ccc">
+        <thead>
+        <tr>
+            <th>Reading</th>
+            <th>Minimum</th>
+            <th>Maximum</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="setting in $ctrl.settings">
+            <th class="{{ setting.sensor }}">{{ setting.sensor }}</th>
+            <td>{{ setting.minimum + ' ' + setting.unit }}</td>
+            <td>{{ setting.maximum + ' ' + setting.unit }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

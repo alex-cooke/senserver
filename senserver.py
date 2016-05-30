@@ -149,9 +149,7 @@ def webService():
     urls = (
         '/sense/current', 'senseCurrent',
         '/sense/range', 'senseRange',
-        '/sense/test', 'senseTest',
         '/notification/settings', 'notificationSettings',
-        '/shutdown', 'shutdown',
         '/', 'index'
     )
 
@@ -238,6 +236,9 @@ def notificationService():
     
     print('Starting Notification Service')
 
+    #   stores times of last notification
+    lastNotification = {}
+
     while True:
         time.sleep(2)
 
@@ -253,11 +254,20 @@ def notificationService():
             if (currentValue < reading['minimum']
                  or currentValue > reading['maximum']):
 
-                message = (readingName + ' WARNING').upper() + '\n'
-                message += 'Current: ' + str(currentValue) + ' ' + reading['unit'] +'\n'
-                message += 'Acceptable: ' + str(reading['minimum']) + ' - ' + str(reading['maximum']) + reading['unit']
+                #   check whether it has been less than a minute since the last notification
 
-                notify(message)
+                if (not readingName in lastNotification or (currentReading['time'] - lastNotification[readingName]).seconds > 30):
+
+                    #   generate a message
+                    message = (readingName + ' WARNING').upper() + '\n'
+                    message += 'Current: ' + str(currentValue) + ' ' + reading['unit'] +'\n'
+                    message += 'Acceptable: ' + str(reading['minimum']) + ' - ' + str(reading['maximum']) + reading['unit']
+
+                    #   post the message
+                    notify(message)
+
+                    #   set the lastNotification time
+                    lastNotification[readingName] = currentReading['time']
 
 #   function to post a notication
 def notify(message):
@@ -273,7 +283,6 @@ def notify(message):
 
     #   post the status update to twitter
     t.statuses.update(status=message)
-    print(message)
 
 ####    SENSE STICK AND DISPLAY FUNCTIONS
 

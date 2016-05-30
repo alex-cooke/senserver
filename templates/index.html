@@ -15,10 +15,21 @@
     <link href="/static/bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="/static/index.css" rel="stylesheet" />
 </head>
-<body class="container">
-    <div class="row" style="padding: 2px;">
-        <div class="heading col-xs-12">SENSERVER 2016</div>
+<body class="container" ng-controller="index">
+<div class="row" style="padding: 2px;">
+    <div class="heading col-xs-12">SENSERVER 2016
+        <div ng-repeat="section in sections" ng-class="{active: section==activeSection}" class="pull-right section"><a ng-click="setActive(section)"><img src="/static/icons/{{ section }}.png"/></a>
+        </div>
+
     </div>
-    <dashboard></dashboard>
+</div>
+    <dashboard ng-if="activeSection == 'dashboard'"></dashboard>
+<div class="row">
+
+    <notifications ng-if="activeSection == 'notifications'"></notifications>
+    <history ng-if="activeSection == 'history'"></history>
+    
+</div>
+
 </body>
 </html>

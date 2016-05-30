@@ -1,21 +1,21 @@
 ﻿<div class="dashboard">
     <div class="row">
         <div class="meter col-sm-4">
-            <div>
+            <div class="temperature">
                 <img src="/static/icons/temperature.png" />
                 <span class="value">{{ $ctrl.current.temperature | number:1 }}</span>
                 <span class="unit">&deg;C</span>
             </div>
         </div>
         <div class="meter col-sm-4">
-            <div>
+            <div class="humidity">
                 <img  src="/static/icons/humidity.png" />
                 <span class="value">{{ $ctrl.current.humidity | number:1 }}</span>
                 <span class="unit">%</span>
             </div>
         </div>
         <div class="meter col-sm-4">
-            <div>
+            <div class="pressure">
                 <img src="/static/icons/pressure.png" />
                 <span class="value">{{ $ctrl.current.pressure | number:0 }}</span>
                 <span class="unit">mb</span>
@@ -36,7 +36,7 @@
         <div class="meter col-xs-4">
             <div style="height: 128px; max-height: 128px">
                 <img class="value" src="/static/icons/rotateyaw.png"
-                     style="-webkit-transform: rotate( { {$ctrl.current.yaw |number: 0}}deg) ; "/>
+                     style="-webkit-transform: rotate( {{ $ctrl.current.yaw |number: 0 }}deg) ; "/>
             </div>
         </div>
 

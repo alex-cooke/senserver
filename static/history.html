@@ -1,0 +1,21 @@
+﻿
+<div style="background: #ccc;margin: 1px">
+    <table class="table table-bordered" style="background: #ccc">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th class="text-right">Temp</th>
+                <th class="text-right">Humidity</th>
+                <th class="text-right">Pressure</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="reading in $ctrl.readings">
+                <th>{{ reading.time | date:"yyyy-MM-dd HH:mm:ss" }}</th>
+                <td class="text-right temperature"> {{ reading.temperature }}</td>
+                <td class="text-right humidity">{{ reading.humidity }}</td>
+                <td class="text-right pressure">{{ reading.pressure }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
