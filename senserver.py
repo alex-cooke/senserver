@@ -38,6 +38,35 @@ class senseCurrent:
     def GET(self):
         return json.dumps(getCurrentReading(), default=date_handler)
 
+    #   /sense/current - returns the most recent reading
+class senseRange:
+    def GET(self):
+        
+        startTime = web.input().startTime
+        endTime = web.input().endTime
+
+        print(startTime)
+        print(endTime)
+        # open a connection to the databased
+        connection = connect(database = DB_NAME)
+        cursor = connection.cursor()
+
+        print datetime.now()
+        # query the database for readings
+        cursor.execute('''SELECT * FROM `reading` where `time` >= ? ''',
+                       (startTime,))
+
+        return json.dumps(cursor.fetchall())
+
+        for row in cursor.fetchall():
+            print row[0], row[1], row[2], row[3], row[4]
+
+        #   close the database cursor and connection
+        cursor.close()
+        connection.close()
+
+        return "Range"
+
 ####    SENSEHAT FUNCTIONS
 
 #   returns the current reading and stores in the currentReading variable
@@ -59,12 +88,12 @@ def getCurrentReading():
         #   generate the reading
         newReading = {
             'time' : datetime.now(),
-            't': round(sense.get_temperature(),1),
-            'p': round(sense.get_pressure(),1),
-            'h': round(sense.get_humidity(),1),
-            'x': round(orientation['roll'],1),
-            'y': round(orientation['pitch'], 1),
-            'z': round(orientation['yaw'],1)
+            'temperature': round(sense.get_temperature(),1),
+            'pressure': round(sense.get_pressure(),1),
+            'humidity': round(sense.get_humidity(),1),
+            'roll': round(orientation['roll'],1),
+            'pitch': round(orientation['pitch'], 1),
+            'yaw': round(orientation['yaw'],1)
         }
 
         #   remove all other readings from the currentReading list
@@ -120,6 +149,7 @@ def runWebServer():
 
     urls = (
         '/sense/current', 'senseCurrent',
+        '/sense/range', 'senseRange',
         '/sense/test', 'senseTest',
         '/shutdown', 'shutdown',
         '/', 'index'
@@ -182,12 +212,12 @@ def startDatabaseLogging():
         #   insert the reading into the database
         cursor.execute('INSERT INTO `reading` (time, temperature,pressure, humidity, roll, pitch, yaw) values (?,?,?,?,?,?,?)',
                     (currentReadingTime,
-                     currentReading['t'],
-                     currentReading['p'],
-                     currentReading['h'],
-                     currentReading['x'],
-                     currentReading['y'],
-                     currentReading['z']))
+                     currentReading['temperature'],
+                     currentReading['pressure'],
+                     currentReading['humidity'],
+                     currentReading['roll'],
+                     currentReading['pitch'],
+                     currentReading['yaw']))
         try:
             connection.commit()             
         except:
@@ -203,6 +233,8 @@ def startDatabaseLogging():
 
 if __name__ == '__main__':
 
+    currentReading = manager.list([])
+
     #   setup the database
     setupDatabase()
 
@@ -212,7 +244,7 @@ if __name__ == '__main__':
 
 #    manager = Manager()
 
-    readingSense.value = False
+
 
  #   l = []
 
@@ -221,13 +253,13 @@ if __name__ == '__main__':
  #   d['a'] = 4
   #  d['d'] = [1,2,3]
  #   readings = manager.list([])
-    currentReading = manager.list([])
+
 
     #   start the process which gets the current reading
  #   pGetCurrentReading = Process(target=getCurrentReading, args=([currentReading]))
  #   pGetCurrentReading.start()
 
- #   runWebServer()
+    runWebServer()
 
     #   start the process which runs the web server
 #    pRunWebServer = Process(target = runWebServer, args = ())

@@ -19,7 +19,7 @@
 .dashboard .meter > div {
  /*   border: solid 1px #000; */
     border-radius: 0px;
-    background: silver;
+    background: #efefef;
     text-align: center;
     max-height: 64px;
     height:64px;
@@ -40,8 +40,6 @@
 
 }
 
-
-
 .dashboard .meter span.value {
     font-size: 24pt;
     text-align: center;
@@ -57,4 +55,16 @@
     padding: 8px;
     height: 48px;
     vertical-align: middle;
+}
+
+#lineChart {
+    width: 100% !important;
+    height: 25vh !important;
+    background: #efefef !important;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
 }
