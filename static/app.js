@@ -13,7 +13,8 @@
             controller: ['$http', '$interval', function($http, $interval) {
                 var $ctrl = this;
 
-                $ctrl.refreshInterval = 250;
+
+                $ctrl.refreshInterval = 1000;
 
 
                 function setStartAndEndTime(interval) {
@@ -41,10 +42,11 @@
                             $ctrl.rangeData = _(data.data)
                                 .map(function(d) {
                                     return {
-                                        time: new moment(d[0]).toDate(),
+                                        time: moment(d[0]).toDate(),
                                         temperature: d[1],
                                         pressure: d[2],
-                                        humidity: d[3]
+                                        humidity: d[3],
+                                        pitch: d[5]
                                     }
                                 }).value();
 
@@ -57,7 +59,7 @@
                         });
 
                 }
-
+                //  gets the current reading from senserver, updates the dashboard
                 $ctrl.refresh = function () {
 
                     //  get the current data
@@ -69,10 +71,18 @@
                         var current = data.data;
                         current.time = moment(current.time).toDate();
                         
+                        //  set the current model
                         $ctrl.current = data.data;
 
+                        //  update the range model
                         $ctrl.rangeData.push($ctrl.current);
+                        var effeciveStartTime = moment($ctrl.startTime).add('second', -5).toDate();
+                        _.remove($ctrl.rangeData, function (reading) {
 
+                            return reading.time < effeciveStartTime;
+                            });
+
+                        //  rerender the chart
                         rerenderChart($ctrl.rangeData, $('#lineChart'));
                     });
 
@@ -90,18 +100,18 @@
                 //  define line functions for temperature, humidity and pressure
                 var lines = {
                     humidity: d3.line()
-                        .x(function (d) { return scale.time(d.time); })
-                        .y(function (d) { return scale.humidity(d.humidity); }),
+                        .x(function(d) { return scale.time(d.time); })
+                        .y(function(d) { return scale.humidity(d.humidity); }),
                     temperature: d3.line()
-                        .x(function (d) { return scale.time(d.time); })
-                        .y(function (d) { return scale.temperature(d.temperature); }),
+                        .x(function(d) { return scale.time(d.time); })
+                        .y(function(d) { return scale.temperature(d.temperature); }),
                     pressure: d3.line()
-                        .x(function (d) { return scale.time(d.time); })
-                        .y(function (d) { return scale.pressure(d.pressure); }),
+                        .x(function(d) { return scale.time(d.time); })
+                        .y(function(d) { return scale.pressure(d.pressure); }),
                     pitch: d3.line()
-                        .x(function (d) { return scale.time(d.time); })
+                        .x(function(d) { return scale.time(d.time); })
                         .y(function (d) { return scale.pitch(d.pitch); })
-            }
+                };
 
 
                 //  Render the line charts
@@ -114,34 +124,33 @@
                             scale[lineName].range([height, 0]);
                         });
 
+                    //  update the time domain and range
                     scale.time.range([0, width]);
-
-                    
                     scale.time.domain([$ctrl.startTime.toDate(), $ctrl.endTime.toDate()]);
 
+                    //  get the svg element and render the initial lines
                     var svg = d3.select($svg[0]);
-
-
                     _(lines).each(function (lineFunction, lineName) {
                             svg.append('path')
                                 .datum(data)
                                 .attr('class', 'line ' + lineName)
                                 .attr('d', lineFunction);
                         });
-
-
-
                 }
 
                 //  Rerender the line chart
                 function rerenderChart(data, $svg) {
                     
+                    //  get the svg element
                     var svg = d3.select($svg[0]);
 
+                    //  updates the time domain
                     scale.time.domain([$ctrl.startTime.toDate(), $ctrl.endTime.toDate()]);
 
+                    //  calculate a distance to offset the chart
                     var translate = scale.time($ctrl.endTime) - scale.time($ctrl.lastEndTime);
 
+                    //  rerender the lines
                     _(lines).each(function (lineFunction, lineName) {
                         svg.selectAll('path.' + lineName)
                                 .data([data])
@@ -156,9 +165,6 @@
 
 
                 $ctrl.init();
-
-                //$interval($ctrl.refresh, 500);
-
             }]
 
 
