@@ -1,12 +1,17 @@
-﻿from multiprocessing import Process, Manager, Value
-import time
-from sense_hat import SenseHat
-from datetime import datetime 
-import web
+﻿import web
 import sys
 import json
+import time
+import socket
+import os
+import re
+from multiprocessing import Process, Manager, Value
+from sense_hat import SenseHat
+from datetime import datetime 
 from sqlite3 import connect, PARSE_DECLTYPES
 from twitter import *
+from stick import SenseStick
+from ctypes import c_char_p
 
 ####    CONSTANTS
 DB_NAME = 'senserver.db'
@@ -30,8 +35,14 @@ notifierSettings = [
     {
         'sensor': 'temperature',
         'minimum': 0,
-        'maximum': 40,
+        'maximum': 50,
         'unit': '°'
+    },
+    {
+        'sensor': 'pressure',
+        'minimum': 0,
+        'maximum': 2000,
+        'unit': 'mb'
     }
 ]
 
@@ -55,15 +66,14 @@ class senseCurrent:
     def GET(self):
         return json.dumps(getCurrentReading(), default=date_handler)
 
-    #   /sense/current - returns the most recent reading
+#   /sense/current - returns the most recent reading
 class senseRange:
     def GET(self):
         
+        # get the querystring values
         startTime = web.input().startTime
         endTime = web.input().endTime
 
-        print(startTime)
-        print(endTime)
         # open a connection to the databased
         connection = connect(database = DB_NAME)
         cursor = connection.cursor()
@@ -73,16 +83,20 @@ class senseRange:
         cursor.execute('''SELECT * FROM `reading` where `time` >= ? ''',
                        (startTime,))
 
-        return json.dumps(cursor.fetchall())
-
-        for row in cursor.fetchall():
-            print row[0], row[1], row[2], row[3], row[4]
+        #   get a json dump of the readings
+        returnValue = json.dumps(cursor.fetchall())
 
         #   close the database cursor and connection
         cursor.close()
         connection.close()
 
-        return "Range"
+        #   return the data
+        return returnValue
+
+#   /notification/settings - returns the current notification settings
+class notificationSettings:
+    def GET(self):
+        return json.dumps(notifierSettings)
 
 ####    SENSEHAT FUNCTIONS
 
@@ -136,6 +150,7 @@ def webService():
         '/sense/current', 'senseCurrent',
         '/sense/range', 'senseRange',
         '/sense/test', 'senseTest',
+        '/notification/settings', 'notificationSettings',
         '/shutdown', 'shutdown',
         '/', 'index'
     )
@@ -260,8 +275,80 @@ def notify(message):
     t.statuses.update(status=message)
     print(message)
 
+####    SENSE STICK AND DISPLAY FUNCTIONS
+
+SCROLL_SPEED = 0.05
+
+allDisplayModes = ['server', 'temperature', 'pressure', 'humidity']
+currentDisplayMode = 'server'
+
+#   this service listens for clicks on the joystick and cycles through the display modes
+def senseStickService():
+    print 'Starting SenseHat Stick Service'
+
+    STICK_MIDDLE = 28
+    stick = SenseStick()
+
+    while True:
+        if stick.wait(timeout=0.10) == True:
+
+            #   Get the input from the joystick
+            stick_input = stick.read()
+            direction = stick_input[1]
+            state = stick_input[2]  #   1 = pressed, 2 = held, 0 = released
+
+            if (state == 0):    #   Only register if the joystick has been released
+                if (direction == STICK_MIDDLE):
+                    #   cycle the currentDisplayMode through the allDisplayModes array
+                    currentDisplayMode.value = allDisplayModes[(allDisplayModes.index(currentDisplayMode.value) + 1) % len(allDisplayModes)]
+
+#   show the server network details on the sensehat display
+def senseDisplayServer(sense):
+    name = socket.gethostname()
+    ifconfig = os.popen('ifconfig').read()
+    match = re.compile('^([^\s]+?)\s+?.+\n.\s+?[^\d].*?inet addr:((?:[0-9]{1,3}\.){3}[0-9]{1,3})', re.MULTILINE)
+    interfaces = re.findall(match, ifconfig)
+    sense.show_message(name, SCROLL_SPEED)
+    for (interface, ipaddress) in interfaces:
+        if (interface != 'lo'):
+            sense.show_message(interface, SCROLL_SPEED)
+            sense.show_message(ipaddress, SCROLL_SPEED)  
+
+def senseDisplayTemperature(sense):
+    sense.show_message("Temp (C) " + str(round(sense.get_temperature(),1)), SCROLL_SPEED)
+
+def senseDisplayHumidity(sense):
+    sense.show_message("Humidity (%) " + str(round(sense.get_humidity(),1)), SCROLL_SPEED)    
+
+def senseDisplayPressure(sense):
+    sense.show_message("Pressure (mBar) " + str(round(sense.get_pressure(),1)), SCROLL_SPEED)  
+
+#   this service displays messages on the sensehat led screen according to the current mode
+def senseDisplayService():
+    print 'Starting SenseHat Display Service'
+
+    #   create an object with display functions
+    show = {
+        'server': senseDisplayServer,
+        'temperature': senseDisplayTemperature,
+        'humidity': senseDisplayHumidity,
+        'pressure': senseDisplayPressure
+    }
+
+    #   Initialise the sense hat
+    sense = SenseHat()
+    sense.clear(0,0,0)
+
+    #   display a message according to the currentDisplayMode on a loop
+    while True:
+        show[currentDisplayMode.value](sense)
+
+####    MAIN PROGRAM
+
 if __name__ == '__main__':
 
+    #   setup multiprocess variables
+    currentDisplayMode = manager.Value(c_char_p, 'server')
     currentReading = manager.list([])
 
     #   setup the database
@@ -275,25 +362,23 @@ if __name__ == '__main__':
     notificationServiceProcess = Process(target = notificationService, args = ())
     notificationServiceProcess.start()
 
-    #   start the web server
- #   notificationServiceProcess.join()
-#    loggingServiceProcess.join()
-    webService()
+    #   start the the web service
+    webServiceProcess = Process(target = webService, args = ())
+    webServiceProcess.start()
 
+    #   start the the senseStick service
+    senseStickServiceProcess = Process(target = senseStickService, args = ())
+    senseStickServiceProcess.start()
 
-    #   start the process which runs the web server
-#    pRunWebServer = Process(target = runWebServer, args = ())
-#    pRunWebServer.start()
+    #   start the the senseStick service
+    senseDisplayServiceProcess = Process(target = senseDisplayService, args = ())
+    senseDisplayServiceProcess.start()
 
-
-
-    #pDisplayReadings = Process(target = displayReadings, args=([.15]))
-    #pDisplayReadings.start()
-
-    #pDisplayReadings2 = Process(target = displayReadings, args=([.125]))
-    #pDisplayReadings2.start()
-
- #   while True:
- #       pass
+    #   loop to do nothing whilst the processes run
+    while True:
+        try:
+            pass
+        except KeyboardInterrupt:
+            print("OOPS")
 
  
