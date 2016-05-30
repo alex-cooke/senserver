@@ -6,6 +6,7 @@ import web
 import sys
 import json
 from sqlite3 import connect, PARSE_DECLTYPES
+from twitter import *
 
 ####    CONSTANTS
 DB_NAME = 'senserver.db'
@@ -17,6 +18,22 @@ settings = manager.dict({
     'readingSense': False   #   indicates whether the sense hat is busy
 })
 readingSense = Value('b',False)
+
+#   notifier objects
+notifierSettings = [
+    {
+        'sensor': 'humidity',
+        'minimum': 20,
+        'maximum': 50,
+        'unit': '%'
+    },
+    {
+        'sensor': 'temperature',
+        'minimum': 0,
+        'maximum': 40,
+        'unit': '°'
+    }
+]
 
 #   Web application objects
 render = web.template.render('templates/')
@@ -109,43 +126,11 @@ def getCurrentReading():
         return currentReading[0];
     else:
         return None
-        
 
-    #while True:
-    ##    time.sleep(interval)
-        
-    #    # get the new reading
-    #    orientation = sense.get_orientation()
-    #    newReading = {
-    #        'time' : datetime.now(),
-    #        't': round(sense.get_temperature(),1),
-    #        'p': round(sense.get_pressure(),1),
-    #        'h': round(sense.get_humidity(),1),
-    #        'x': round(orientation['roll'],1),
-    #        'y': round(orientation['pitch'], 1),
-    #        'z': round(orientation['yaw'],1)
-    #    }
+#   service that responds to HTTP requests
+def webService():
 
-    #    #   remove all other readings from the currentReading list
-    #    while (len(currentReading) > 0):
-    #        currentReading.pop()
-        
-    #    #   save the current reading
-    #    currentReading.append(newReading)
-
-    #    print('getCurrentReading')
-
-def displayReadings(interval):
-
-    while True:
-        time.sleep(interval)
-        r = getCurrentReading()
-        ##print('currentReading: ' + str(getCurrentReading()))
-
-
-def runWebServer():
-
-    print (readingSense.value)
+    print('Starting Web Service')
 
     urls = (
         '/sense/current', 'senseCurrent',
@@ -154,6 +139,7 @@ def runWebServer():
         '/shutdown', 'shutdown',
         '/', 'index'
     )
+
     app = web.application(urls, globals())
 
     try:
@@ -180,7 +166,9 @@ def setupDatabase():
     connection.close()
     
 #   logs readings from the sense hat into the database on a regular basis      
-def startDatabaseLogging():
+def loggingService():
+
+    print('Starting Logging Service')
 
     lastReadingTime = datetime.now()
 
@@ -230,6 +218,47 @@ def startDatabaseLogging():
     cursor.close()
     connection.close()
 
+#   service to check the readings and post notifications
+def notificationService():
+    
+    print('Starting Notification Service')
+
+    while True:
+        time.sleep(2)
+
+        #   get the current reading
+        currentReading = getCurrentReading()
+        if (currentReading == None): continue
+
+        #   check against the notifierSettings to see if notification is required
+        for reading in notifierSettings:
+            readingName = reading['sensor']
+            currentValue = currentReading[readingName]
+
+            if (currentValue < reading['minimum']
+                 or currentValue > reading['maximum']):
+
+                message = (readingName + ' WARNING').upper() + '\n'
+                message += 'Current: ' + str(currentValue) + ' ' + reading['unit'] +'\n'
+                message += 'Acceptable: ' + str(reading['minimum']) + ' - ' + str(reading['maximum']) + reading['unit']
+
+                notify(message)
+
+#   function to post a notication
+def notify(message):
+
+    #   oauth constants to post to twitter
+    access_token = '732479895855464449-gPfQbiOAb1Fd4juxM37fD4exhdwIMe8'
+    access_token_secret = 'wGR7aVlmtHYT2K7QUXCjujwRwgk2dqWceSlIiw6NksbaB'
+    consumer_key = 'X6VmWQqqLK9cjPxiuZkgqlaDu'
+    consumer_secret = 'gevnV75tu3HT9VVXAY5g7WvMhyUMYHK4IrzJoEIC6ph1yruFoY'
+
+    #   create a twitter object
+    t = Twitter(auth=OAuth(access_token, access_token_secret, consumer_key, consumer_secret))
+
+    #   post the status update to twitter
+    t.statuses.update(status=message)
+    print(message)
 
 if __name__ == '__main__':
 
@@ -238,28 +267,19 @@ if __name__ == '__main__':
     #   setup the database
     setupDatabase()
 
-    #   start the database logging
-    startDatabaseLoggingProcess = Process(target = startDatabaseLogging, args = ())
-    startDatabaseLoggingProcess.start()
+    #   start the logging service
+    loggingServiceProcess = Process(target = loggingService, args = ())
+    loggingServiceProcess.start()
 
-#    manager = Manager()
+    #   start the notifier service
+    notificationServiceProcess = Process(target = notificationService, args = ())
+    notificationServiceProcess.start()
 
+    #   start the web server
+ #   notificationServiceProcess.join()
+#    loggingServiceProcess.join()
+    webService()
 
-
- #   l = []
-
- #   currentReading = manager.dict()
-
- #   d['a'] = 4
-  #  d['d'] = [1,2,3]
- #   readings = manager.list([])
-
-
-    #   start the process which gets the current reading
- #   pGetCurrentReading = Process(target=getCurrentReading, args=([currentReading]))
- #   pGetCurrentReading.start()
-
-    runWebServer()
 
     #   start the process which runs the web server
 #    pRunWebServer = Process(target = runWebServer, args = ())
